@@ -20,3 +20,16 @@
 const uint16_t PROGMEM keymaps[][MATRIX_ROWS][MATRIX_COLS] = {
     [0] = LAYOUT( KC_BTN4, KC_BTN5, DRAG_SCROLL, KC_BTN2, KC_BTN1, KC_BTN3 )
 };
+
+// Scroll axis filter: by default only vertical scrolling is reported (like a
+// plain mouse wheel); holding Shift switches to horizontal-only scrolling.
+report_mouse_t pointing_device_task_user(report_mouse_t mouse_report) {
+    if (get_mods() & MOD_MASK_SHIFT) {
+        // Shift held: ball left/right scrolls left/right
+        mouse_report.v = 0;
+    } else {
+        // Default: ball up/down scrolls up/down
+        mouse_report.h = 0;
+    }
+    return mouse_report;
+}
