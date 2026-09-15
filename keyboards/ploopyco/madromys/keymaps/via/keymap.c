@@ -16,6 +16,7 @@
  * along with this program.  If not, see <http://www.gnu.org/licenses/>.
  */
 #include QMK_KEYBOARD_H
+#include "raw_hid.h"
 
 const uint16_t PROGMEM keymaps[][MATRIX_ROWS][MATRIX_COLS] = {
     [0] = LAYOUT( KC_BTN4, KC_BTN5, DRAG_SCROLL, KC_BTN2, KC_BTN1, KC_BTN3 )
@@ -32,4 +33,25 @@ report_mouse_t pointing_device_task_user(report_mouse_t mouse_report) {
         mouse_report.h = 0;
     }
     return mouse_report;
+}
+
+// Raw HID scroll-mode toggle; host side is crates/ploopy-scroll in the
+// dotfiles repo (protocol: [0xC0, cmd, ...] 32 bytes, cmd 0=off 1=on
+// 2=toggle 3=query, reply echoes state in data[2]).
+enum { id_ploopy_drag_scroll = 0xC0 };
+
+extern bool is_drag_scroll;
+void        toggle_drag_scroll(void);
+
+bool via_command_kb(uint8_t *data, uint8_t length) {
+    if (data[0] != id_ploopy_drag_scroll) return false;
+    switch (data[1]) {
+        case 0: is_drag_scroll = false; break;
+        case 1: is_drag_scroll = true;  break;
+        case 2: toggle_drag_scroll();   break;
+        default: break;
+    }
+    data[2] = is_drag_scroll;
+    raw_hid_send(data, length);
+    return true;
 }
